@@ -1,0 +1,297 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        html,
+        body {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            background-image: url('fifa.jpeg');
+            background-size: cover;
+        }
+
+        button {
+            background-color: #4CAF50;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+        }
+
+        .buttonload {
+            background-color: #4CAF50;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 1px 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+        }
+
+        .allSport {
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 900px;
+        }
+
+        .singleSport {
+            padding: 30px 10px;
+            border: 1px solid grey;
+            text-align: center;
+            margin: 5px;
+            width: 150px;
+            flex-basis: 150px;
+            flex-grow: 1;
+        }
+
+        #passcount {
+            height: 40%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        #shootcount {
+            height: 40%;
+            max-width: 300px;
+            margin: 0 auto;
+            padding-top: 2%;
+        }
+
+        .outside-card {
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+            width: 80%;
+            margin-left: 10%;
+        }
+
+        .inside-card {
+            display: flex;
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .container1 {
+            padding: 2px 16px;
+            width: 50%;
+        }
+
+        .container2 {
+            padding: 2px 16px;
+            width: 50%;
+        }
+
+        .game-title {
+            padding-top: 2%;
+            padding-left: 1.2%;
+        }
+
+
+        .topShooter {
+            width: 28%;
+            height: auto;
+            float: left;
+        }
+
+        .topPasser {
+            width: 28%;
+            height: auto;
+            margin-left: 30%;
+        }
+
+        .star-details {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- <div class="news-story"></div> -->
+    <div class="allSport">
+        <div class="singleSport">
+            <button id="soccerButtonSub">Subscribe Soccer</button>
+            <button id="soccerButtonUnSub">UnSubscribe Soccer</button>
+            <div id="soccerHighlights">
+            </div>
+        </div>
+        <div class="singleSport">
+            <button id="basketballButtonSub">Subscribe BasketBall</button>
+            <button id="basketballButtonUnSub">UnSubscribe BasketBall</button>
+            <div id="basketballHighlights">
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    let socBtn;
+    let basketBtn;
+    let socInterval;
+    let basketInterval;
+    document.getElementById("soccerButtonSub").onclick = function (e) {
+        socBtn = document.getElementById("soccerButtonSub");
+        const soc = '<button class="buttonload"><i class="fa fa-spinner fa-spin"></i>Subscribing</button>'
+        socBtn.innerHTML = soc;
+        subscribe("soccer")
+    }
+    document.getElementById("basketballButtonSub").onclick = function (e) {
+        basketBtn = document.getElementById("basketballButtonSub");
+        const btn = '<button class="buttonload"><i class="fa fa-spinner fa-spin"></i>Subscribing</button>'
+        basketBtn.innerHTML = btn;
+        subscribe("basketball")
+    }
+    document.getElementById("basketballButtonUnSub").onclick = function (e) {
+        unsubscribe("basketball")
+    }
+    document.getElementById("soccerButtonUnSub").onclick = function (e) {
+        unsubscribe("soccer")
+    }
+
+    async function unsubscribe(sport) {
+        console.log(sport)
+        axios.get('http://localhost:8000/unsubscribe', {
+            params: {
+                listner: 'kaustubh',
+                channel: sport
+            }
+        });
+        if (sport === "soccer") {
+            clearInterval(socInterval);
+        } else if (sport === "basketball") {
+            clearInterval(basketInterval);
+        }
+    }
+
+    async function subscribe(sport) {
+        console.log(sport)
+        axios.get('http://localhost:8000/subscribe', {
+            params: {
+                listner: 'kaustubh',
+                channel: sport
+            }
+        });
+        if (sport === "soccer") {
+            socInterval = setInterval(() => callAPISoccer(), 2000);
+        } else if (sport === "basketball") {
+            basketInterval = setInterval(() => callAPIBasketBall(), 2000);
+        }
+    }
+
+    async function callAPIBasketBall() {
+        axios.get('http://localhost:8000/getData', {
+            params: {
+                listner: 'kaustubh'
+            }
+        }).then(response => {
+            var basketball = document.getElementById("basketballHighlights");
+            var basketballHighlights = response.data.filter(function (element) {
+                return element.channel === "basketball"
+            });
+            if (basketballHighlights.length > 0) {
+                basketBtn.remove();
+                basketball.innerHTML = '';
+            }
+            console.log(basketballHighlights)
+            let bSoc = '';
+            for (var i = 0; i < basketballHighlights.length; i++) {
+                let highlight = JSON.parse(String(basketballHighlights[i].data))
+                bSoc += `<div class="outside-card">
+                                <h4 class="game-title"><b>Game ID: `+ highlight.id + ` </b></h4>
+                                <div class="inside-card">
+                                <div class="container1">
+                                    <p>Game Overview</p>
+                                    <p>`+ highlight.team1 + ` vs ` + highlight.team2 + ` </p>
+                                </div>
+                                <div class="container2">
+                                    <div class=star-details>
+                                        <div class="topShooter">
+                                            <img src="basketball-player-svgrepo-com.svg" alt="Avatar" style="width:100%">                        
+                                            <div class="container">
+                                            <h4><b></b></h4>
+                                            <p>Score: `+ highlight.score1 + `</p>
+                                            <p>Team: `+ highlight.team1 + `</p>
+                                            </div>
+                                        </div>
+                                        <div class="topPasser">
+                                            <img src="basketball-player-svgrepo-com.svg" alt="Avatar" style="width:100%">                        
+                                            <div class="container">
+                                            <h4><b></b></h4>
+                                            <p>Score: `+ highlight.score2 + ` </p>
+                                            <p>Team: `+ highlight.team2 + `</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>`;
+                basketball.innerHTML = bSoc;
+            }
+        })
+    }
+
+    async function callAPISoccer() {
+        axios.get('http://localhost:8000/getData', {
+            params: {
+                listner: 'kaustubh'
+            }
+        }).then(response => {
+            var soccer = document.getElementById("soccerHighlights");
+            var soccerHighlights = response.data.filter(function (element) {
+                return element.channel === "soccer"
+            });
+            if (soccerHighlights.length > 0) {
+                socBtn.remove();
+                soccer.innerHTML = '';
+            }
+            // console.log(soccerHighlights)
+            let pSoc = '';
+            for (var i = 0; i < soccerHighlights.length; i++) {
+                let highlight = JSON.parse(String(soccerHighlights[i].data))
+                pSoc += `<div class="outside-card">
+                                <h4 class="game-title"><b>Game ID: `+ highlight.id + ` </b></h4>
+                                <div class="inside-card">
+                                <div class="container1">
+                                    <p>Game Overview</p>
+                                    <p>`+ highlight.team1 + ` vs ` + highlight.team2 + ` </p>
+                                </div>
+                                <div class="container2">
+                                    <div class=star-details>
+                                        <div class="topShooter">
+                                            <img src="basketball-player-svgrepo-com.svg" alt="Avatar" style="width:100%">                        
+                                            <div class="container">
+                                            <h4><b></b></h4>
+                                            <p>Score: `+ highlight.score1 + `</p>
+                                            <p>Team: `+ highlight.team1 + `</p>
+                                            </div>
+                                        </div>
+                                        <div class="topPasser">
+                                            <img src="basketball-player-svgrepo-com.svg" alt="Avatar" style="width:100%">                        
+                                            <div class="container">
+                                            <h4><b></b></h4>
+                                            <p>Score: `+ highlight.score2 + ` </p>
+                                            <p>Team: `+ highlight.team2 + `</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>`;
+                soccer.innerHTML = pSoc;
+            }
+        })
+    }
+</script>
+
+</html>
