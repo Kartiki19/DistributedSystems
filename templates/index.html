@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Information</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+
+        body {
+        font-family: Arial, sans-serif;
+        background-image: url('/static/sky.jpg');
+        background-size: cover;
+        background-repeat: no-repeat;
+        padding: 0px;
+    }
+        #container {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .form-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .form-group input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .form-group button {
+            background-color: #28A745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 10px;
+            cursor: pointer;
+        }
+
+        .form-group button.subscribe {
+            background-color: #28A745;
+        }
+
+        .form-group button.unsubscribe {
+            background-color: #28A745;
+        }
+
+        .location-title {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h2>Weather Information</h2>
+        <div class="form-group">
+            <input type="text" id="cityInput" placeholder="Enter City Name">
+            <button id="searchBtn">Search</button>
+            <button id="subscribeBtn" class="subscribe">Subscribe</button>
+            <!--<button id="unsubscribeBtn" class="unsubscribe">Unsubscribe</button>-->
+        </div>
+        <div id="Unsubscribe"></div>
+        <div id="weatherUp"></div>
+        <div id="weatherInfo"></div>
+    </div>
+</body>
+<script>
+        let subBtn;
+        let subscribedChannel = null;
+        let weatherInterval;
+        let ApiInterval;
+        let subscriptionInterval;
+
+        document.getElementById("searchBtn").onclick = function (e) {
+            subBtn = document.getElementById("searchBtn");
+            const soc = '<button class="buttonload"><i class="fa fa-spinner fa-spin"></i>Searching</button>'
+            subBtn.innerHTML = soc;
+            const cityName = document.getElementById("cityInput").value;
+            if (!cityName) {
+                alert("Please enter a city name.");
+                return;
+            }
+
+            const apiKey = "7c78d5daa857cd521d7506ef34968c30"; // Replace with your API key
+
+            // Define the API endpoint to fetch weather data
+            const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${apiKey}`;
+
+            // Make a GET request to the OpenWeatherMap API
+            axios.get(apiUrl)
+                .then(function (response) {
+                    // Handle the API response and display weather data
+                    const weatherData = response.data;
+                    displayWeatherInfo(weatherData);
+                    subscribeButton = document.getElementById("subscribeBtn");
+                    subscribeButton.disabled = false;
+                })
+                .catch(function (error) {
+                    // Handle errors (e.g., city not found)
+                    alert("Error fetching weather data. Please check the city name or your API key.");
+                });
+                subBtn.innerHTML = "Search";
+        };
+        
+        function displayWeatherInfo(data) {
+            const weatherInfoContainer = document.getElementById("weatherUp");
+
+            // Create a table to display weather data
+            const table = document.createElement("table");
+            const headers = ["City", "Temperature (°C)", "Pressure", "Humidity", "Wind Speed (m/s)"];
+
+            // Create table headers
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+            headers.forEach((headerText) => {
+                const th = document.createElement("th");
+                th.appendChild(document.createTextNode(headerText));
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create table body with weather data
+            const tbody = document.createElement("tbody");
+            const weatherDataRow = document.createElement("tr");
+            weatherDataRow.innerHTML = `
+                <td>${data.name}</td>
+                <td>${(data.main.temp - 273.15).toFixed(2)}</td>
+                <td>${data.main.pressure}</td>
+                <td>${data.main.humidity}</td>
+                <td>${data.wind.speed}</td>
+            `;
+            tbody.appendChild(weatherDataRow);
+            table.appendChild(tbody);
+
+            // Replace existing weather information (if any) with the new table
+            weatherInfoContainer.innerHTML = "";
+            weatherInfoContainer.appendChild(table);
+        }
+
+
+        document.getElementById("subscribeBtn").onclick = function (e) {
+            //if (subscribedChannel) {
+            //    alert("You are already subscribed to a channel. Please unsubscribe first.");
+            //   return;
+            //}
+
+            const cityName = document.getElementById("cityInput").value;
+            if (!cityName) {
+                alert("Please enter a city name to subscribe.");
+                return;
+            }
+
+            if (subscribedChannel == cityName) {
+                alert('You are already subscribed to ' + cityName);
+                return;
+            }
+
+            subscribeBtn = document.getElementById("subscribeBtn");
+            const btn = '<button class="buttonload"><i class="fa fa-spinner fa-spin"></i>Subscribing</button>'
+            subscribeBtn.innerHTML = btn;
+            APICall();
+            ApiInterval = setInterval(() => APICall(), 1000 * 60 * 0.5);
+            setTimeout(function(){
+                clearInterval(ApiInterval);
+            },300000);
+            function APICall(){
+                var form = new FormData();
+                form.append("sender", "sender_1");
+                form.append("channel", cityName);
+                form.append("num_msg", "1");
+                form.append("message", "info");
+                form.append("id", "2");
+
+                var settings = {
+                    "url": "http://localhost:5500",
+                    "method": "POST",
+                    "timeout": 0,
+                    "processData": false,
+                    "mimeType": "multipart/form-data",
+                    "contentType": false,
+                    "data": form
+                };
+
+                $.ajax(settings).done(function (response) {
+                    console.log(response);
+                    });
+                };
+
+                subscribedChannel = cityName;
+                subscribe(cityName);
+                subscribeBtn.innerHTML = "Subscribe";
+
+                a = document.getElementById("Unsubscribe");
+                g = document.createElement('button');
+                g.setAttribute("id", cityName);
+                g.textContent ='Unsubscribe ' + cityName;
+                g.setAttribute("onClick", "getUnsubID(this.id)");
+                a.appendChild(g);
+                
+                
+                //axios(settings).then(function (response) {
+                  //  console.log(response);
+
+                    // Store the subscribed channel
+                   // subscribedChannel = cityName;
+
+                    // Start fetching data continuously
+                   // subscriptionInterval = setInterval(() => fetchWeatherData(cityName), 2000);
+
+                    // Restore the subscribe button text
+                  //  subscribeBtn.innerHTML = "Subscribed";
+                //});
+        }
+
+
+        async function subscribe(cityName) {
+        console.log(cityName)
+        axios.get('http://localhost:8000/subscribe', {
+            params: {
+                listener: 'stormscribe',
+                channel: cityName
+            }
+        }).catch(function (error) {
+                if (error.response) {
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+                } else if (error.request) {
+                console.log(error.request);
+                } else {
+                console.log('Error', error.message);
+                }
+                console.log(error.config);
+            });
+    
+            weatherInterval = setInterval(() => callAPIWeather(), 10000);
+        }
+
+    const controller = new AbortController();
+    async function callAPIWeather() {     
+        axios.get('http://localhost:8000/getData', {
+            params: {
+                listener: 'stormscribe'
+            }
+        }, { signal: controller.signal }).then(response => {
+            var highlights = response.data
+            console.log(highlights)
+            let weatherInfo = '';
+            for (var i = 0; i < highlights.length; i++) {
+                let highlight = JSON.parse(String(highlights[i].data))
+                weatherInfo += `
+                    <p><strong>Weather Overview</strong></p>
+                    <table>
+                        <tr>
+                            <td>City:</td>
+                            <td>${highlight.City}</td>
+                        </tr>
+                        <tr>
+                            <td>Min_Temp:</td>
+                            <td>${highlight.Min_Temp}</td>
+                        </tr>
+                        <tr>
+                            <td>Max_Temp:</td>
+                            <td>${highlight.Max_Temp}</td>
+                        </tr>
+                        <tr>
+                            <td>Pressure:</td>
+                            <td>${highlight.Pressure}</td>
+                        </tr>
+                        <tr>
+                            <td>Humidity:</td>
+                            <td>${highlight.Humidity}</td>
+                        </tr>
+                        <tr>
+                            <td>Wind_Speed:</td>
+                            <td>${highlight.Wind_Speed}</td>
+                        </tr>
+                    </table>`;
+
+                var weatherInfoContainer = document.getElementById("weatherInfo");
+                weatherInfoContainer.innerHTML = weatherInfo;
+            }                
+            }).catch(function (error) {
+                if (error.response) {
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+                } else if (error.request) {
+                console.log(error.request);
+                } else {
+                console.log('Error', error.message);
+                }
+                console.log(error.config);
+            });
+        }
+
+        function getUnsubID(city){
+            if (subscribedChannel) {
+                unsubscribe(city);
+            } else {
+                alert("You are not subscribed to any channel.");
+            }
+        }
+        //document.getElementById("unsubscribeBtn").onclick = function (e) {
+            //if (subscribedChannel) {
+            //    unsubscribe(subscribedChannel);
+            //} else {
+            //    alert("You are not subscribed to any channel.");
+            //}
+       // }
+
+        
+        async function unsubscribe(cityName) {
+        console.log(cityName)
+        axios.get('http://localhost:8000/unsubscribe', {
+            params: {
+                listener: 'stormscribe',
+                channel: cityName
+            }
+        }).catch(function (error) {
+                if (error.response) {
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+                } else if (error.request) {
+                console.log(error.request);
+                } else {
+                console.log('Error', error.message);
+                }
+                console.log(error);
+            });
+        var unsub =  document.getElementById(cityName);
+        unsub.remove();
+        clearInterval(weatherInterval);
+        clearInterval(ApiInterval);
+        controller.abort();
+        //document.body.appendChild(socBtn);
+        // Clear the subscribed channel
+        subscribedChannel = null;
+
+        // Restore the subscribe button text
+        subscribeBtn.innerHTML = "Subscribe";
+
+    }
+
+
+    </script>
+
+</html>
