@@ -1,4 +1,3 @@
-Author - Prakarsha Dahat, Pauravi Nagarkar, Kartiki Dindorkar
 Application Name - Weather Notification Application
 
 There are three componenets in the application - Broker, Client (Subscriber), Server (Publisher).
